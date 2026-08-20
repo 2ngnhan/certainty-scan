@@ -12,14 +12,11 @@ abstract: >-
   from raising its own score. A sealed-reveal protocol supports blind comparison
   of machine scores against an independent expert rating.
 authors:
-  # TODO: confirm the form you publish under. Vietnamese full form would be
-  # family-names: Nguyễn / given-names: Ngọc Nhân — this matches package.json.
   - family-names: Nguyen
     given-names: Nhan
     email: nhan@naucode.com
     affiliation: NAUCode
-    # TODO: add if you have one — it is what disambiguates you across venues
-    # orcid: "https://orcid.org/0000-0000-0000-0000"
+    orcid: "https://orcid.org/0009-0009-8236-0504"
 version: 0.5.1
 date-released: 2026-08-20
 license: MIT
