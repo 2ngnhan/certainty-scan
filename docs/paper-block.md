@@ -144,23 +144,28 @@ disappointing one — converts §A.3 from a promissory note into a finding.
 ### C.1 Availability statement
 
 > **Artifact availability.** The instrument described in this paper is released
-> as `certainty-scan`, an open-source command-line tool (MIT licence). Source:
+> as `certainty-scan`, an open-source command-line tool (MIT licence), archived
+> at **doi:10.5281/zenodo.22026189**. Source:
 > `https://github.com/2ngnhan/certainty-scan`. Package:
 > `https://www.npmjs.com/package/certainty-scan`. The scoring engine, the four
 > tracker adapters, the sealed-reveal validation protocol, and the full
 > instrument specification — including its stated limitations and falsification
-> conditions — are contained in the repository. All results reported here were
-> produced with package version 0.5.0, instrument version 0.3.0. Every generated
-> report and data export carries the instrument version so that any figure can be
-> traced to the exact scoring rules that produced it. The tool runs locally and
-> requires no server; no project data is transmitted.
+> conditions — are contained in the archived record. All results reported here
+> were produced with package version 0.5.1, instrument version 0.3.0. Every
+> generated report and data export carries the instrument version, so any figure
+> can be traced to the exact scoring rules that produced it. **The tool performs
+> no model inference: scoring and the recommended-action list are deterministic
+> rule evaluations, so a given backlog yields an identical report on every run.**
+> It runs locally and requires no server; no project data is transmitted.
 
 ### C.2 Metadata table
 
 | Field | Value |
 |---|---|
 | Artifact name | `certainty-scan` |
-| Package version | 0.5.0 |
+| Package version | 0.5.1 |
+| **Archived DOI (cite this)** | **10.5281/zenodo.22026189** |
+| Concept DOI (all versions) | 10.5281/zenodo.22026188 |
 | **Instrument version** | **0.3.0** — stamped into every report and export |
 | Licence | MIT |
 | Author | Nhan Nguyen — nhan@naucode.com |
@@ -226,6 +231,5 @@ Neither is done yet. Both are required for the URLs in §C to resolve.
    the previous name; `npm publish` under the new name is required before
    `npx certainty-scan` works for a reader.
 
-Optionally, mint a DOI by archiving a release on Zenodo and cite that instead of
-the bare repository URL — most venues prefer an immutable identifier, and it
+Optionally,  — most venues prefer an immutable identifier, and it
 protects the citation against any later rename.
