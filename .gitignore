@@ -1,0 +1,20 @@
+node_modules/
+certainty-report.html
+certainty-report.md
+certainty-data.json
+certainty.config.yaml
+.env
+*.local
+.certainty-history.json
+.claude/
+.DS_Store
+
+# research artifacts: never belong in a repo
+*.sealed
+certainty-key.txt
+certainty-benchmark-key.txt
+certainty-rating-sheet.html
+certainty-research-export.json
+certainty-benchmark-export.json
+certainty-benchmark-report.html
+rating.json

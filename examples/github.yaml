@@ -1,0 +1,15 @@
+project: My GitHub Project
+source: github
+
+github:
+  repo: owner/name            # e.g. vercel/next.js
+  # token: ${GITHUB_TOKEN}    # uncomment for private repos / higher rate limits
+
+  # GitHub has no priority field — set tier with labels on your issues:
+  #   certainty:basic  certainty:intermediate  certainty:advanced
+  # And record validation explicitly with labels:
+  #   validated  assumed  needs-clarification
+
+output:
+  html: certainty-report.html
+  markdown: certainty-report.md

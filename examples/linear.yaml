@@ -1,0 +1,25 @@
+project: My Linear Project
+source: linear
+
+linear:
+  apiKey: ${LINEAR_API_KEY}
+  teamId: your-team-id   # find at linear.app/settings → your team URL
+
+  # Uncomment and adjust to match your team's field conventions
+  # fieldMap:
+  #   tier:
+  #     field: estimate     # use story points as tier proxy
+  #     map:
+  #       1: basic
+  #       3: intermediate
+  #       8: advanced
+  #   validation_status:
+  #     field: state.type
+  #     map:
+  #       completed: validated
+  #       started: assumed
+  #       triage: needs_clarification
+
+output:
+  html: certainty-report.html
+  markdown: certainty-report.md

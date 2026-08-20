@@ -1,0 +1,28 @@
+project: My Notion Project
+source: notion
+
+notion:
+  apiKey: ${NOTION_API_KEY}     # create at notion.so/my-integrations
+  databaseId: your-database-id  # from the database URL: notion.so/xxx/<database-id>?v=...
+
+  fieldMap:
+    title_field:    { field: Name }       # column that holds the item title
+    assignee_field: { field: Assignee }
+    estimate_field: { field: Estimate }   # number column for CU value
+    validation_status:
+      field: Status                       # your Status column name
+      map:
+        Done: validated
+        "In Progress": assumed
+        "To Do": unvalidated
+        Backlog: unvalidated
+    tier:
+      field: Priority                     # your Priority column name
+      map:
+        High: advanced
+        Medium: intermediate
+        Low: basic
+
+output:
+  html: certainty-report.html
+  markdown: certainty-report.md

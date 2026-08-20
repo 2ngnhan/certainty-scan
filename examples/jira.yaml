@@ -1,0 +1,23 @@
+project: My Jira Project
+source: jira
+
+jira:
+  host: yourteam.atlassian.net
+  email: you@example.com
+  apiToken: ${JIRA_API_TOKEN}   # create at id.atlassian.com/manage-profile/security/api-tokens
+  projectKey: MYPROJECT
+
+  # Uncomment to override default field mappings
+  # jql: 'project = MYPROJECT AND sprint in openSprints()'   # custom JQL filter
+  # fieldMap:
+  #   validation_status:
+  #     field: fields.status.name
+  #     map:
+  #       "Done": validated
+  #       "In Review": assumed
+  #       "In Progress": assumed
+  #       "To Do": unvalidated
+
+output:
+  html: certainty-report.html
+  markdown: certainty-report.md

@@ -1,0 +1,48 @@
+name: Certainty Units Report
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # every Monday at 8am UTC
+  workflow_dispatch:        # also runnable manually
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Keep score history across runs so each report shows what moved
+      - name: Restore sync history
+        uses: actions/cache@v4
+        with:
+          path: .certainty-history.json
+          key: certainty-history-${{ github.run_id }}
+          restore-keys: certainty-history-
+
+      - name: Generate report
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          # JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          # NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          # GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}   # for source: github
+        run: |
+          npx certainty-scan@latest sync --json
+          # add --slack-webhook ${{ secrets.SLACK_WEBHOOK }} to post the summary
+          # add --fail-below 50 to fail this job when avg certainty drops too low
+
+      # Publish only the report, never the repo checkout
+      - name: Stage report
+        run: mkdir -p public && cp certainty-report.html public/index.html
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
