@@ -1,6 +1,6 @@
 {
   "name": "certainty-scan",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Certainty scoring for project work items — connects to Linear, Jira, Notion, GitHub Issues",
   "type": "module",
   "bin": {
