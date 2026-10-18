@@ -3,6 +3,7 @@
 import {
   mergeFieldMap, validationFromLabels, tierFromLabels,
   blockedFromLabels, detectEvidenceLinks, parseDependencyRefs,
+  declaresNoDependencies,
 } from './util.js'
 
 const NOTION_API = 'https://api.notion.com/v1'
@@ -64,12 +65,8 @@ function extractProp(prop) {
 const DEFAULT_MAP = {
   validation_status: {
     field: 'Status',  // Notion column name
-    map: {
-      Done:        'validated',
-      'In Progress': 'assumed',
-      'To Do':     'unvalidated',
-      Backlog:     'unvalidated',
-    },
+    // v0.4: the Status column never implies validation; labels decide.
+    map: {},
     default: 'unvalidated',
   },
   workflow_status: {
@@ -138,6 +135,7 @@ export async function fetchItems(config) {
         return refs.length ? refs.map(ref => ({ external_id: ref, workflow_status: 'unknown' })) : null
       })(),
       linked_evidence:     detectEvidenceLinks(description),
+      dependencies_declared_none: declaresNoDependencies(description, labels),
       comments_text:       [],
       citation_count:      0,
       assignee:            extractProp(props[fm.assignee_field?.field]),

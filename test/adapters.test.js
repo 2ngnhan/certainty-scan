@@ -81,7 +81,8 @@ test('jira: flattens ADF one line per block so AC headings are found', async () 
   try {
     const [item] = await fetchItems({ host: 'x.atlassian.net', email: 'e', apiToken: 't', projectKey: 'PROJ' })
     assert.equal(item.workflow_status, 'in_progress')
-    assert.equal(item.validation_status, 'assumed')
+    // v0.4: an in-progress status category no longer implies "assumed"
+    assert.equal(item.validation_status, 'unvalidated')
     assert.equal(item.tier, 'advanced')
     assert.equal(item.acceptance_criteria, 'done when X')
     assert.equal(item.estimate, 5)
@@ -91,7 +92,7 @@ test('jira: flattens ADF one line per block so AC headings are found', async () 
   }
 })
 
-test('github: skips PRs, maps state_reason, caps at limit', async () => {
+test('github: skips PRs, closure is not validation, caps at limit', async () => {
   const { fetchItems } = await import('../src/adapters/github.js')
   const issues = [
     {
@@ -114,9 +115,11 @@ test('github: skips PRs, maps state_reason, caps at limit', async () => {
     assert.equal(items.length, 2, 'pull requests are skipped')
     assert.equal(items[0].external_id, '#10')
     assert.equal(items[0].workflow_status, 'todo')
-    assert.equal(items[0].acceptance_criteria, '- [ ] step')
+    // v0.4: a bare checklist is not acceptance criteria
+    assert.equal(items[0].acceptance_criteria, null)
     assert.equal(items[1].workflow_status, 'done')
-    assert.equal(items[1].validation_status, 'validated')
+    // v0.4: closing as completed is a workflow event, not a validation
+    assert.equal(items[1].validation_status, 'unvalidated')
     assert.equal(items[1].citation_count, 4)
   } finally {
     restore()

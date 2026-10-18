@@ -1,14 +1,17 @@
 # Đặc tả thiết kế — Certainty Instrument
 
-**Trạng thái:** v0.3. `INSTRUMENT_VERSION = '0.3.0'` mang theo bộ từ vựng đã chốt ở
-§3.1; **phần chấm điểm giống hệt v0.2** — cùng năm signal, cùng trọng số, cùng các quy
-tắc anti-circularity. Những phần bổ sung được đặc tả ở đây (RCE §6.3, CAD §7.1, F_risk
-§8.1, phát hiện gian lận §6.4) là **đã thiết kế, chưa xây** — một report đóng dấu
-`0.3.0` **không** có nghĩa là bất kỳ phần nào trong số đó đã chạy. Xem §14 cho trạng
-thái xây dựng chính xác.
+**Trạng thái:** v0.4. `INSTRUMENT_VERSION = '0.4.0'`. Vẫn năm signal và trọng số như
+v0.3; thay đổi nằm ở **cái signal được phép đọc** và **cách quyết định vị trí trên hill**.
+Vị trí giờ là phân loại qua cổng (§4.9), không còn là ngưỡng trên điểm số. Đóng issue
+không còn được tính là xác nhận ở bất kỳ adapter nào; tiêu chí nghiệm thu chỉ đọc dưới
+heading tường minh; hạng mục do bot mở chịu quy tắc 1; trên GitHub, link bằng chứng phải
+trỏ vào chính repo của hạng mục. Mỗi thay đổi gắn với một lỗi đã ghi nhận ở Phụ lục A của
+bản tiếng Anh. Điểm đóng dấu `0.3.0` và `0.4.0` không so sánh được với nhau. Với v0.4,
+**bản tiếng Anh là bản chuẩn** khi hai bản lệch nhau. RCE §6.3, CAD §7.1, F_risk §8.1,
+phát hiện gian lận §6.4 vẫn **đã thiết kế, chưa xây**.
 **Thay thế:** phần đặc tả ngầm nằm rải trong comment của `src/certainty.js` và
 `README.md`.
-**Sửa lần cuối:** 2026-08-20
+**Sửa lần cuối:** 2026-10-18
 **Bản tiếng Anh:** [`instrument-design.md`](instrument-design.md) — cùng cấu trúc mục,
 tham chiếu chéo được.
 
@@ -375,6 +378,33 @@ trong delta view, để output của máy và đánh giá 1–9 của PM nằm t
 cho phép làm số học giữa hai thang.
 
 Các ngưỡng đều là đặt tay. `uphill`/`downhill` cắt ở 50.
+
+---
+
+### 4.9 Trạng thái trên hill — phân loại qua cổng (đã xây, v0.4)
+
+**Vì sao.** Đến v0.3, hạng mục vượt đỉnh khi điểm đạt 50. Điểm là một tổng, nên tài liệu
+có thể đẩy hạng mục qua đỉnh dù điều kiện thoát không cho phép: hạng mục bị block, gắn nhãn
+validated không link, đạt đúng 50; hạng mục đứng trên phụ thuộc còn mở và một giả định chưa
+kiểm đạt 60. Chỉnh trọng số không sửa được, vì bất kỳ tổng nào cho điểm tài liệu đều có thể
+bị tài liệu đẩy qua một đường cố định. **Điều kiện cần được kiểm trước; điểm số xét sau
+cùng.**
+
+| Trạng thái | Điều kiện |
+|---|---|
+| `done_verified` | workflow `done` **và** `validated` **và** có link bằng chứng |
+| `done_unverified` | workflow `done`, các trường hợp còn lại |
+| `executing` | chưa xong, **và** mọi cổng vượt đỉnh đều đạt |
+| `uphill` | chưa xong, các trường hợp còn lại |
+
+Cổng vượt đỉnh, bắt buộc đủ cả bốn: không bị block · phụ thuộc đã giải quyết (mọi phụ thuộc
+khai báo đã `done`, **hoặc** hạng mục tuyên bố tường minh là không có phụ thuộc; im lặng
+không đạt) · có quyết định ghi nhận · điểm ≥ 50. Cổng không đạt được ghi theo tên
+(`failed_gates`) vào báo cáo và file export.
+
+**Điểm yếu đã biết.** Mỗi cổng được thoả bằng một bản ghi, không phải bằng sự thật của bản
+ghi đó. Comment "signed off" hình thức vẫn qua cổng quyết định; "Phụ thuộc: không" có thể
+viết sai. Cổng làm bản ghi sai trở nên tường minh và kiểm tra được, không phát hiện nó.
 
 ---
 

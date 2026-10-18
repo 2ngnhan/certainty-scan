@@ -7,7 +7,10 @@ abstract: >-
   how much of the evidence that would justify confidence actually exists, and
   reports what is missing. Five signals — validation, dependencies, acceptance
   criteria, evidence structure, and recorded decisions — combine into a 0-100
-  score per item. Scoring is deterministic and performs no model inference.
+  score per item, and each item is classified on the certainty hill by gated
+  necessary conditions (not blocked, dependencies resolved, decision recorded)
+  before the score is consulted. Scoring is deterministic and performs no model
+  inference.
   Three anti-circularity rules prevent the tool, or the automation it measures,
   from raising its own score. A sealed-reveal protocol supports blind comparison
   of machine scores against an independent expert rating.
@@ -17,8 +20,8 @@ authors:
     email: nhan@naucode.com
     affiliation: NAUCode
     orcid: "https://orcid.org/0009-0009-8236-0504"
-version: 0.5.1
-date-released: 2026-08-20
+version: 0.6.0
+date-released: 2026-10-18
 license: MIT
 doi: 10.5281/zenodo.22026189
 repository-code: "https://github.com/2ngnhan/certainty-scan"

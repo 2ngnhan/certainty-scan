@@ -26,8 +26,8 @@ const emptyItem = {
   citation_count: 0,
 }
 
-test('instrument version is stamped as 0.3.x', () => {
-  assert.match(INSTRUMENT_VERSION, /^0\.3\./)
+test('instrument version is stamped as 0.4.x', () => {
+  assert.match(INSTRUMENT_VERSION, /^0\.4\./)
 })
 
 test('signal maxes sum to 100 and match the published config', () => {

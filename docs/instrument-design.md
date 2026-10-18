@@ -1,13 +1,17 @@
 # Certainty Instrument — Design Specification
 
-**Status:** v0.3. `INSTRUMENT_VERSION = '0.3.0'` ships the vocabulary settled in §3.1;
-**scoring is byte-identical to v0.2** — same five signals, same weights, same
-anti-circularity rules. The additions specified here (RCE §6.3, CAD §7.1, F_risk §8.1,
-gaming detection §6.4) are **designed, not built** — a report stamped `0.3.0` does not
-mean any of them ran. See §14 for the exact build state.
+**Status:** v0.4. `INSTRUMENT_VERSION = '0.4.0'`. Same five signals and weights as
+v0.3; what changed is **what the signals are allowed to read** and **how an item's
+position on the hill is decided**. Position is now a gated classification (§4.9), not
+a threshold on the score. Workflow closure no longer implies validation in any
+adapter (§4.2), acceptance criteria are read only under an explicit heading (§4.4),
+bot-authored items fall under rule 1 (§4.7), and GitHub evidence links must point into
+the item's own repository (§4.2). Every change is traced to a documented failure in
+Appendix A. Scores stamped `0.3.0` and `0.4.0` are not comparable. RCE §6.3, CAD §7.1,
+F_risk §8.1 and gaming detection §6.4 remain **designed, not built**; see §14.
 **Supersedes:** the implicit specification carried in `src/certainty.js` comments and
 `README.md`.
-**Last revised:** 2026-08-20
+**Last revised:** 2026-10-18
 **Vietnamese edition:** [`instrument-design.vi.md`](instrument-design.vi.md) — same
 section numbering, cross-referenceable.
 
@@ -206,10 +210,15 @@ the clamp is defensive only.
 | `validation_status = assumed` | 10 | `assumed` |
 | anything else (`unvalidated`, `needs_clarification`, …) | 0 | status text, underscores replaced |
 
-**Data source.** Explicit labels (`validated`, `assumed`, `needs-clarification`)
-override workflow-derived status. `linked_evidence` is read from PR/commit URLs,
-closing keywords (`fixes #12`) in descriptions and comments, and Linear's
-GitHub/GitLab attachments.
+**Data source.** Explicit labels only: `validated`, `assumed`, `needs-clarification`
+(and their `validation:` variants). **v0.4: no adapter derives validation from
+workflow state by default.** Up to v0.3 all four adapters mapped completion to
+`validated` (and Jira/Linear/Notion mapped *in progress* to `assumed`), which
+contradicted the design note below; Appendix A, F1, shows what that did to a real
+backlog. A team may still opt in through `fieldMap`, and owns that choice.
+`linked_evidence` is read from PR/commit URLs, closing keywords (`fixes #12`) in
+descriptions and comments, and Linear's GitHub/GitLab attachments. **v0.4, GitHub:**
+PR and commit URLs count only when they point into the item's own repository.
 
 **Design note — why "closed" does not imply "validated".** The status ladder is
 deliberately not derived from workflow state. A closed ticket is evidence that
@@ -218,8 +227,10 @@ consequential design decision in the instrument, and the most likely to be
 unpopular with teams whose closed count is their reporting metric.
 
 **Known weakness.** `linked_evidence` is presence-checked, not quality-checked. A
-merged PR that does nothing satisfies it. Mitigation is the outer loop (§7), not
-a cleverer regex.
+merged PR that does nothing satisfies it; so does a same-repository PR that is merely
+*mentioned* in discussion (Appendix A, F4). The instrument measures **evidence
+availability, not evidence quality**. Mitigation is the outer loop (§7), not a
+cleverer regex.
 
 **Falsification.** If items scoring 40 here are no less defect-prone under blind
 audit than items scoring 20, this signal is not measuring validation and the
@@ -236,13 +247,17 @@ distinction should collapse.
 | Condition | Points | Reason |
 |---|---|---|
 | item blocked, or any dependency blocked | 0 | `blocked` / `a dependency is blocked` |
+| explicitly declared to have none (v0.4) | 20 | `declared to have no dependencies` |
 | no dependencies declared | 10 | `no dependencies declared (flagged for PM review)` |
 | all dependencies `done` | 20 | `all N dependencies done` |
 | some dependencies open | 10 | `M of N dependencies still open` |
 
 **Data source.** Tracker relations (Jira issue links, Linear `blocks`) and
 in-description declarations (`depends on #12`, `blocked by ENG-42`). A `blocked`
-label zeroes the signal regardless of tracker state.
+label zeroes the signal regardless of tracker state. **v0.4:** a `no-dependencies`
+label, or a line such as `Dependencies: none` / `Phụ thuộc: không`, is a recorded claim
+of independence and earns 20; silence still earns 10 and keeps the flag. The
+distinction matters for the crest gate in §4.9, which silence cannot pass.
 
 **Design note — no carve-out for completed items.** A done item with no declared
 dependencies stays at 10, not 20. The signal reads dependency state only; it does
@@ -278,9 +293,12 @@ signal is not discriminating and its 20 points should be redistributed.
   (`- item`, `* item`, `+ item`, `- [ ] item`, `1. item`, `1) item`), **or**
 - **≥ 2** of the tokens `given` / `when` / `then` present as whole words.
 
-**Data source.** An `## Acceptance Criteria` heading (or `**Acceptance Criteria**`,
-or an `Acceptance criteria:` line) in the description, a markdown checklist, or a
-Notion `Acceptance Criteria` column.
+**Data source.** An explicit heading in the description (`Acceptance criteria`,
+`Definition of done`, `Tiêu chí nghiệm thu`, as `#` heading, `**bold**`, or a line
+ending in `:`), or a Notion `Acceptance Criteria` column. **v0.4: no checklist
+fallback.** Issue templates ship pre-checked attestation boxes ("Follow our Code of
+Conduct", "Read the docs"); in the Appendix A illustration that fallback produced 22
+of 22 full-credit scores, all false.
 
 **Known weakness.** The test is structural, not semantic. Two bullets of nonsense
 score 15. This is a deliberate trade: a semantic test would require a model call
@@ -347,7 +365,8 @@ same automation it is measuring.** Three rules, all implemented.
 
 **Rule 1 — machine-written documentation is capped until human-confirmed.**
 
-- *AI-generated* is detected by `AI_MARKER_RE` (`generated by/with ai|claude|copilot|chatgpt|gpt|cursor|gemini|codex`, `Co-authored-by: …`, `🤖`, `[ai-generated]`) or by an `ai-generated` / `machine-generated` label.
+- *AI-generated* is detected by `AI_MARKER_RE` (`generated by/with ai|claude|copilot|chatgpt|gpt|cursor|gemini|codex`, `Co-authored-by: …`, `🤖`, `[ai-generated]`) or by an `ai-generated` / `machine-generated` label. **v0.4:** an item opened by a bot account (`author_is_bot`; GitHub `user.type = Bot` or a `[bot]` login) is machine-authored regardless of markers. Up to v0.3 a Renovate dependency dashboard escaped the cap (Appendix A, F3).
+- *Assumption, stated:* authorship is inferred from markers, labels and account type. A human pasting unmarked AI text under their own account is not detected.
 - *Human-confirmed* requires `linked_evidence`, or a `human-reviewed` / `reviewed` / `review:done` label.
 - Unconfirmed AI items have **Acceptance criteria capped at 5** and **Evidence capped at 5**, with the cap stated in the reason string, and carry the flag `machine_generated_unconfirmed`. The count is reported in every sync.
 - Validation (Signal 1) is **not** capped — it already requires linked evidence for full credit.
@@ -382,7 +401,54 @@ used in the delta view, so machine output and the PM's 1–9 rating are on compa
 axes. **Rank order is what §9 compares** — the mapping exists for display, not to
 license arithmetic across the two scales.
 
-Thresholds are hand-set. `uphill`/`downhill` split at 50.
+Thresholds are hand-set. **v0.4:** `uphill`/`downhill` counts follow the gated state
+of §4.9, not the score. The score still splits at 50 for display.
+
+---
+
+### 4.9 Hill state — gated classification (implemented, v0.4)
+
+**Why.** Up to v0.3 an item crossed the crest when its score reached 50. Because the
+score is a sum, documentation could carry an item across that Table-3-style exit
+conditions forbid: a blocked item labelled validated without evidence scored exactly
+50; an item resting on an open dependency and an unverified assumption scored 60
+(Appendix A, CE1–CE2). Re-weighting cannot fix this: any additive score in which
+documentation earns points can be pushed over a fixed line by documentation. The fix
+is structural. **Necessary conditions are checked first; the score is consulted
+last.**
+
+**Rule.** `computeHillState(item)` returns one of four states:
+
+| State | Condition |
+|---|---|
+| `done_verified` | workflow `done` **and** `validated` **and** linked evidence |
+| `done_unverified` | workflow `done`, otherwise |
+| `executing` | not done, **and** every crest gate holds |
+| `uphill` | not done, otherwise |
+
+Crest gates, all required:
+
+| Gate | Holds when |
+|---|---|
+| `not_blocked` | neither the item nor any dependency is blocked |
+| `dependencies_resolved` | every declared dependency is `done`, **or** the item explicitly declares none (§4.3); silence does not pass |
+| `decision_recorded` | Signal 5 is in state `decision` |
+| `score_at_threshold` | score ≥ 50 |
+
+Failed gates are returned by name (`failed_gates`) and written to the report, the
+`--json` export and the research export, so every classification can be audited
+against the rule.
+
+**Relation to the score.** The score remains an ordinal signal for ranking and for
+the sealed comparison (§9). The state answers a different question: whether the
+recorded evidence permits the item to be treated as understood (`executing`) or
+confirmed (`done_verified`). An item can be well documented and still `uphill`; that
+is the rule working.
+
+**Known weakness.** Each gate is satisfied by a recorded artefact, not by the truth of
+what it records: a nominal "signed off" comment passes `decision_recorded`, and
+"Dependencies: none" can be written falsely. The gates make the false record explicit
+and inspectable; they do not detect it (Appendix A, AE1, AE3).
 
 ---
 
@@ -792,6 +858,7 @@ when raters may share a systematic blind spot.
 | Component | Status |
 |---|---|
 | Five-signal score, breakdown, hints | **Implemented** — `computeScoreBreakdown` |
+| Gated hill state (§4.9) | **Implemented, v0.4** — `computeHillState` |
 | Anti-circularity rules 1–3 | **Implemented** |
 | Tier weighting and weighted average | **Implemented** |
 | Levels, hill position, gaps, `next` | **Implemented** |
@@ -820,9 +887,13 @@ renames.
   weight; evidence became component-wise; discussion became decision-based rather
   than comment-count; anti-circularity rules added. `INSTRUMENT_VERSION = '0.2.0'`,
   stamped into every report and export.
-- **v0.3 (this document)** — first explicit specification. Adds the vocabulary
-  ruling (§3), the rename in §6.1, and specifies RCE, CAD, F_risk, and gaming
-  detection.
+- **v0.3** — first explicit specification. Adds the vocabulary ruling (§3), the
+  rename in §6.1, and specifies RCE, CAD, F_risk, and gaming detection.
+- **v0.4 (this document)** — gated hill state (§4.9); closure no longer implies
+  validation in any adapter; acceptance criteria read only under an explicit heading;
+  bot authorship under rule 1; same-repository evidence links on GitHub; explicit
+  no-dependency declaration. Prompted by external peer review and by the public-repo
+  illustration in Appendix A. Weights unchanged and still uncalibrated.
 
 **External inputs.** RCE adapted from DORA / SPACE / Bosu et al. (2015). The
 jagged-frontier framing behind CAD follows Dell'Acqua et al. (2023). The κ
@@ -840,3 +911,64 @@ specification discipline this document follows (construct · basis · formula ·
 source · target · sensitivity · reliability · criterion validity · falsification
 condition), the RCE construct, and the CAD outer-loop design. The distinction
 between borrowing a construct and borrowing a result is the whole discipline.
+
+
+---
+
+## Appendix A. Illustration, counterexamples, adversarial examples
+
+**Status of this appendix.** An *illustration*, not an evaluation. It shows how the
+released instrument behaves on one real public backlog and on constructed cases. It
+supports no claim about criterion validity.
+
+### A.1 Public-repository illustration
+
+The 30 most recently updated issues of a large public open-source project
+(`vitejs/vite`, snapshot 2026-10-18) were scored with the released package 0.5.1
+(instrument 0.3.0), research-depth comment fetching on, and re-scored under v0.4.
+
+| Quantity | v0.3.0 | v0.4.0 |
+|---|---|---|
+| Mean score (median) | 36 (35) | 17 (15) |
+| Items past the crest | 7 of 30, all closed issues | 0 of 30 |
+| Items "validated" | 9, every one inferred from closing the issue | 0 (no `validated` labels in use) |
+| Full acceptance-criteria credit | 22, all false positives | 0 |
+| Items with any declared dependency | 0 | 0 |
+
+Findings, each fixed in v0.4:
+
+- **F1 closure read as validation.** All 9 "validated" items were closed issues; none
+  carried a validation label (§4.2).
+- **F2 template checklists read as acceptance criteria.** 21 of the 22 full-credit
+  items were issue-template attestation boxes; the 22nd was a bot-generated checklist
+  (§4.4).
+- **F3 bot authorship not detected.** The bot-generated item escaped the rule-1 cap
+  (§4.7).
+- **F4 mention read as evidence.** One open, unresolved issue counted as having linked
+  evidence because a candidate PR was mentioned in discussion. v0.4 still counts it
+  (same repository); this is a known limit of presence-checking (§4.2).
+- **Dependencies constant.** No item declared dependencies, so Signal 2 was a constant
+  10 here, as §4.3 predicts for teams that do not record them.
+
+Reproduction scripts and per-item output accompany the paper that reports them.
+
+### A.2 Counterexamples to a score-only crest
+
+Encoded as tests in `test/gates.test.js`.
+
+| Case | Score | Crest by score (v0.3) | Gated state (v0.4) |
+|---|---|---|---|
+| CE1 blocked, labelled validated without evidence, fully documented | 50 | crosses | `uphill` (not_blocked) |
+| CE2 only an assumption, dependency open, decision recorded | 60 | crosses | `uphill` (dependencies_resolved) |
+| CE3 documented and resolved, never verified | 60 | crosses | `executing`; when closed, `done_unverified` |
+
+### A.3 Adversarial examples
+
+| Case | Effect in v0.3 | Effect in v0.4 |
+|---|---|---|
+| AE1 two vacuous criteria bullets | +15 | +15 (**known limit**: structural test) |
+| AE2 `validated` label + link to another repository's PR | 40, score 50 | link not counted on GitHub; validation 20 |
+| AE3 "LGTM, signed off" comment | decision, +10 | decision, +10 (**known limit**) |
+| AE4 AI-generated item with a `reviewed` label added | cap lifted | cap lifted (**known limit**: labels are trusted) |
+| AE5 AI-generated item, no confirmation | capped at 5 + 5 | capped at 5 + 5 |
+| AE6 item opened by a bot account | not capped | capped at 5 + 5 |

@@ -4,6 +4,7 @@ import {
   applyMap, mergeFieldMap,
   extractAcceptanceCriteria, validationFromLabels, tierFromLabels,
   blockedFromLabels, detectEvidenceLinks, parseDependencyRefs,
+  declaresNoDependencies,
 } from './util.js'
 
 const LINEAR_API = 'https://api.linear.app/graphql'
@@ -67,13 +68,9 @@ async function fetchAllIssues(apiKey, teamId) {
 const DEFAULT_MAP = {
   validation_status: {
     field: 'state.type',
-    map: {
-      completed: 'validated',
-      started:   'assumed',
-      triage:    'needs_clarification',
-      backlog:   'unvalidated',
-      cancelled: 'unvalidated',
-    },
+    // v0.4: workflow state never implies validation; labels decide. Opt in
+    // through fieldMap if your team treats a Linear state as validation.
+    map: {},
     default: 'unvalidated',
   },
   workflow_status: {
@@ -145,6 +142,7 @@ export async function fetchItems(config) {
       acceptance_criteria: extractAcceptanceCriteria(description),
       blocked:            blockedFromLabels(labels) || /block/i.test(issue.state?.name ?? ''),
       dependencies:       dependencies.length ? dependencies : null,
+      dependencies_declared_none: declaresNoDependencies(description, labels),
       linked_evidence:    hasCodeAttachment || detectEvidenceLinks(description, ...comments),
       comments_text:      comments,
       citation_count:     comments.length,

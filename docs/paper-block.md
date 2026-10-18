@@ -1,5 +1,7 @@
 # Paper insert — computed hill position, gate, and artifact declaration
 
+> **Superseded (2026-10-18).** Written for instrument 0.3.0. The crest rule below is a score threshold; since 0.4.0 the hill state is gated (`docs/instrument-design.md` §4.9). Kept for provenance.
+
 Replacement text for the `C_k(t)` block, plus the artifact-availability
 declaration. Every number below is verified against `src/certainty.js` at
 `INSTRUMENT_VERSION = '0.3.0'`.

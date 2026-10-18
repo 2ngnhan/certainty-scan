@@ -107,6 +107,11 @@ export function buildResearchExport(items, meta = {}) {
           discussion: signalPoints(i, 'discussion'),
         },
         flags: i.flags ?? [],
+        // v0.4: gated classification, recorded separately from the score
+        hill_state: i.hill_state ?? null,
+        failed_gates: i.failed_gates ?? [],
+        dependencies_declared_none: Boolean(i.dependencies_declared_none),
+        author_is_bot: Boolean(i.author_is_bot),
         validation_status: i.validation_status ?? null,
         workflow_status: i.workflow_status ?? null,
         tier: i.tier ?? null,

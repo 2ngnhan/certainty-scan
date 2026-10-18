@@ -4,6 +4,7 @@ import {
   applyMap, mergeFieldMap,
   extractAcceptanceCriteria, validationFromLabels, tierFromLabels,
   blockedFromLabels, detectEvidenceLinks, parseDependencyRefs,
+  declaresNoDependencies,
 } from './util.js'
 
 function base64(str) {
@@ -61,11 +62,8 @@ async function fetchAllIssues(config) {
 const DEFAULT_MAP = {
   validation_status: {
     field: 'fields.status.statusCategory.key',
-    map: {
-      done:       'validated',
-      'in-progress': 'assumed',
-      new:        'unvalidated',
-    },
+    // v0.4: status category never implies validation; labels decide.
+    map: {},
     default: 'unvalidated',
   },
   workflow_status: {
@@ -175,6 +173,7 @@ export async function fetchItems(config) {
       acceptance_criteria: extractAcceptanceCriteria(descText),
       blocked:             blockedFromLabels(labels) || /block/i.test(f.status?.name ?? ''),
       dependencies:        dependencies.length ? dependencies : null,
+      dependencies_declared_none: declaresNoDependencies(descText, labels),
       linked_evidence:     detectEvidenceLinks(descText, ...comments),
       comments_text:       comments,
       citation_count:      f.comment?.total ?? 0,

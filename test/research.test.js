@@ -69,7 +69,7 @@ test('the research export is anonymized: no titles, names, URLs, or descriptions
   assert.equal(typeof exp.items[0].description_length, 'number', 'H3 readability fields present')
   assert.equal(exp.has_rating, true)
   assert.equal(exp.consent, true)
-  assert.match(exp.instrument_version, /^0\.3\./)
+  assert.match(exp.instrument_version, /^0\.4\./)
 })
 
 test('spearman: monotonic 1, inverse -1, null when n < 3, ties tolerated', () => {

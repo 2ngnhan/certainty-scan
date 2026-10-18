@@ -5,7 +5,8 @@
 import {
   applyMap, mergeFieldMap,
   extractAcceptanceCriteria, validationFromLabels, tierFromLabels,
-  blockedFromLabels, detectEvidenceLinks, parseDependencyRefs,
+  blockedFromLabels, detectEvidenceLinksInRepo, parseDependencyRefs,
+  declaresNoDependencies, isBotLogin,
 } from './util.js'
 
 const GITHUB_API = 'https://api.github.com'
@@ -36,14 +37,13 @@ async function fetchAllIssues(repo, token, { state = 'all', limit = 500 } = {}) 
   return issues.slice(0, limit)
 }
 
+// v0.4: closing an issue is a workflow event, not a validation. Validation
+// comes from explicit labels only (`validated`, `assumed`). Teams that want
+// closure-as-validation can still opt in through fieldMap, and own that choice.
 const DEFAULT_MAP = {
   validation_status: {
     field: 'state_reason',
-    map: {
-      completed:   'validated',
-      not_planned: 'unvalidated',
-      reopened:    'assumed',
-    },
+    map: {},
     default: 'unvalidated',
   },
 }
@@ -134,7 +134,9 @@ export async function fetchItems(config) {
       dependencies:        depRefs.length
                              ? depRefs.map(ref => ({ external_id: ref, workflow_status: depStatus(ref) }))
                              : null,
-      linked_evidence:     detectEvidenceLinks(body, ...comments),
+      linked_evidence:     detectEvidenceLinksInRepo(repo, body, ...comments),
+      dependencies_declared_none: declaresNoDependencies(body, labels),
+      author_is_bot:       isBotLogin(issue.user?.login, issue.user?.type),
       comments_text:       comments,
       citation_count:      issue.comments ?? 0,
       assignee:            issue.assignee?.login ?? null,

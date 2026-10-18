@@ -215,7 +215,7 @@ export function generateHTML(items, projectName = 'Project', opts = {}) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Certainty Units — ${projectName}</title>
+<title>certainty-scan — ${projectName}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: #fff; color: #161616 }
@@ -236,7 +236,7 @@ export function generateHTML(items, projectName = 'Project', opts = {}) {
 </head>
 <body>
 <header>
-  <h1>Certainty Units &mdash; ${projectName}</h1>
+  <h1>certainty-scan &mdash; ${projectName}</h1>
   <span class="meta">Generated ${now}${research.pairId ? ` &middot; pair ${esc(research.pairId)}` : ''} &middot; instrument v${INSTRUMENT_VERSION}</span>
 </header>
 <main>
@@ -246,8 +246,9 @@ export function generateHTML(items, projectName = 'Project', opts = {}) {
     ${metricBox('Avg certainty', metrics.weightedAvgCertainty + '%', `tier-weighted (unweighted ${metrics.avgCertaintyScore}%)`)}
     ${metricBox('Completion rate', metrics.completionRate + '%', `${metrics.completedEstimate} / ${metrics.totalEstimate} delivered`)}
     ${metricBox('Validated share', metrics.integrityScore + '%', 'validated / completed')}
-    ${metricBox('Uphill', metrics.uphill, 'discovery zone')}
-    ${metricBox('Downhill', metrics.downhill, 'execution zone')}
+    ${metricBox('Uphill', metrics.uphill, 'gates not yet met')}
+    ${metricBox('Downhill', metrics.downhill, `executing ${metrics.executing ?? 0} · done ${(metrics.doneVerified ?? 0) + (metrics.doneUnverified ?? 0)}`)}
+    ${metricBox('Done, unverified', metrics.doneUnverified ?? 0, 'closed without validation and linked evidence')}
   </div>
 
   ${flagNotes(metrics)}
@@ -256,7 +257,7 @@ export function generateHTML(items, projectName = 'Project', opts = {}) {
   <p style="font-size:12px;color:#525252;margin:-8px 0 12px">Left of the peak: still figuring it out. Right: executing with confidence. Hover a dot for the item.</p>
   ${generateHillChartSVG(items, metrics)}
   <p style="font-size:11px;color:#8d8d8d;margin:8px 0 32px">
-    Static snapshot of the <a href="https://propozel.com" target="_blank" style="color:#8d8d8d">Certainty Units</a> hill chart.
+    Static snapshot of the <a href="https://propozel.com" target="_blank" style="color:#8d8d8d">certainty-scan</a> hill chart.
     In <a href="https://propozel.com" target="_blank" style="color:#0f62fe;text-decoration:none">Propozel</a>, this chart is live &mdash; items move as your team validates assumptions, and stakeholders watch it update.
   </p>
 
@@ -308,7 +309,7 @@ export function generateMarkdown(items, projectName = 'Project') {
     return `- **${i.certainty_score ?? 0}%** [${i.external_id}](${i.url || '#'}) ${i.title.slice(0, 60)}\n  ${gaps}`
   })
 
-  return `# Certainty Units Report — ${projectName}
+  return `# certainty-scan Report — ${projectName}
 _${now}_
 ${attention.length ? `\n## Needs attention\n\n${attention.join('\n')}\n` : ''}
 ## Summary
@@ -320,8 +321,10 @@ ${attention.length ? `\n## Needs attention\n\n${attention.join('\n')}\n` : ''}
 | Avg certainty (unweighted) | ${m.avgCertaintyScore}% |
 | Completion rate | ${m.completionRate}% |
 | Validated share | ${m.integrityScore}% |
-| Uphill (discovery) | ${m.uphill} |
-| Downhill (execution) | ${m.downhill} |
+| Uphill (gates not met) | ${m.uphill} |
+| Downhill (executing or done) | ${m.downhill} |
+| Done, verified | ${m.doneVerified ?? 0} |
+| Done, unverified | ${m.doneUnverified ?? 0} |
 
 ## Items (top 30)
 

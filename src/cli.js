@@ -402,7 +402,7 @@ program
         ? ` (${diff.avgDelta > 0 ? '+' : ''}${diff.avgDelta} since ${diff.since.slice(0, 10)})`
         : ''
       const lines = [
-        `*Certainty Units — ${projectName}*`,
+        `*certainty-scan — ${projectName}*`,
         `${items.length} items · avg certainty ${avg}%${deltaText} · tier-weighted ${metrics.weightedAvgCertainty}%`,
         `high ${high} · medium ${medium} · low ${low} · uncertain ${unc}`,
       ]

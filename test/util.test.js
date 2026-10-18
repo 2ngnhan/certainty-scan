@@ -38,8 +38,17 @@ test('acceptance criteria: bold heading and plain "Acceptance criteria:" line', 
   assert.equal(extractAcceptanceCriteria('Acceptance criteria:\ndone when Y'), 'done when Y')
 })
 
-test('acceptance criteria: checklist fallback', () => {
-  assert.equal(extractAcceptanceCriteria('Blah\n- [ ] one\n- [x] two'), '- [ ] one\n- [x] two')
+test('acceptance criteria: a checklist without a heading is not acceptance criteria (v0.4)', () => {
+  assert.equal(extractAcceptanceCriteria('Blah\n- [ ] one\n- [x] two'), null)
+  // the issue-template attestation block that motivated the change
+  const template = '### Validations\n- [x] Follow our Code of Conduct\n- [x] Read the docs\n- [x] Check for duplicates'
+  assert.equal(extractAcceptanceCriteria(template), null)
+})
+
+test('acceptance criteria: Definition of done and Vietnamese headings (v0.4)', () => {
+  assert.equal(extractAcceptanceCriteria('## Definition of done\n- a\n- b'), '- a\n- b')
+  assert.equal(extractAcceptanceCriteria('**Tiêu chí nghiệm thu**\n- a\n- b'), '- a\n- b')
+  assert.equal(extractAcceptanceCriteria('Acceptance criteria: returns 200 for a valid token'), 'returns 200 for a valid token')
 })
 
 test('acceptance criteria: none found', () => {

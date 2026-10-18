@@ -34,7 +34,7 @@ test('generateHTML embeds the hill chart and Propozel pointer', () => {
   const html = generateHTML([item('A', 42)], 'P')
   assert.match(html, /<svg[^>]+Hill chart/)
   assert.match(html, /propozel\.com/)
-  assert.match(html, /instrument v0\.3/, 'the instrument version is stamped')
+  assert.match(html, /instrument v0\.4/, 'the instrument version is stamped')
 })
 
 test('delta view renders when PM ratings are present, with Spearman', () => {

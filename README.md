@@ -54,12 +54,12 @@ Least certain open items:
 
 ## What it scores
 
-Each work item gets a **Certainty Score (0–100)**, scoring model **v0.2**:
+Each work item gets a **Certainty Score (0–100)**, instrument **v0.4**:
 
 | Signal | Max points | How it maps |
 |--------|-----------|-------------|
 | Validation status | 40 | `validated` **with linked evidence** (merged PR, commit, `fixes #n`) → 40 · labelled `validated` without evidence → 20 · `assumed` → 10 |
-| Workflow / dependencies | 20 | all declared dependencies done → 20 · some still open → 10 · item or any dependency blocked → 0 · none declared → 10, flagged for PM review |
+| Workflow / dependencies | 20 | all declared dependencies done, or explicitly declared to have none → 20 · some still open → 10 · item or any dependency blocked → 0 · nothing declared → 10, flagged for PM review |
 | Acceptance criteria | 15 | present and verifiable (2+ testable bullets, or Given/When/Then) → 15 · present but generic → 5 |
 | Evidence | 15 | description structure, 5 each: goals · how-to / guideline · dependency and collaboration notes |
 | Discussion | 10 | recorded decision ("Decision: …" comment, section, or label) → 10 · exchange without a conclusion → 5 |
@@ -80,6 +80,23 @@ Three anti-circularity rules keep the score honest:
 
 Scores map to levels: **high** (≥80) · **medium** (≥50) · **low** (≥20) · **uncertain** (<20)
 
+### Where an item stands is gated, not thresholded (v0.4)
+
+The score ranks items. It does not decide whether an item is past the crest of the
+hill, because a sum of documentation points can be pushed over any fixed line by
+documentation. Each item gets a **hill state**, checked against necessary
+conditions first and the score last:
+
+| State | When |
+|---|---|
+| `uphill` | not done, and at least one crest gate fails |
+| `executing` | not done; **not blocked**, **dependencies resolved** (all declared ones done, or explicitly none), **a decision recorded**, and score ≥ 50 |
+| `done_unverified` | closed, but not validated with linked evidence |
+| `done_verified` | closed, labelled `validated`, and linked to evidence |
+
+Failed gates are named in the report and in `certainty-data.json`
+(`hill_state`, `failed_gates`). See `docs/instrument-design.md` §4.9.
+
 Every score is auditable: hover the score bar in the HTML report for the per-signal
 breakdown, and `certainty-data.json` (via `--json`) includes `certainty_breakdown` per item.
 Every report and export is stamped with the scoring instrument version.
@@ -89,16 +106,23 @@ Every report and export is stamped with the scoring instrument version.
 The score is only as honest as its inputs, so the adapters read signals your team
 already produces:
 
-- **Acceptance criteria** are detected automatically from an `## Acceptance Criteria`
-  heading (or `**Acceptance Criteria**`, or an `Acceptance criteria:` line) in the
-  item description, or from a markdown checklist (`- [ ] …`). In Notion, use an
-  `Acceptance Criteria` column.
-- **Validation labels** override workflow-derived validation. Label an item
-  `validated`, `assumed`, or `needs-clarification` (Notion: tags) to record validation
-  explicitly instead of letting "closed" imply "validated".
+- **Acceptance criteria** are read only under an explicit heading:
+  `Acceptance criteria`, `Definition of done`, or `Tiêu chí nghiệm thu`
+  (`##` heading, `**bold**`, or a line ending in `:`). In Notion, use an
+  `Acceptance Criteria` column. A bare checklist does not count: issue templates
+  ship pre-checked boxes ("Follow our Code of Conduct") that are not criteria.
+- **Validation comes from labels only.** Label an item `validated`, `assumed`, or
+  `needs-clarification` (Notion: tags). Since v0.4 no adapter infers validation from
+  "closed" or "done"; a closed issue is evidence that work stopped, not that it was
+  confirmed. Teams that want the old behaviour can opt in through `fieldMap`.
 - **Linked evidence** is read from PR/commit URLs and closing keywords
   (`fixes #12`) in descriptions and comments, from Linear's GitHub/GitLab
-  attachments, and it is what turns `validated` from 20 into 40 points.
+  attachments, and it is what turns `validated` from 20 into 40 points. On GitHub,
+  PR and commit URLs count only when they point into the same repository.
+- **No dependencies** can be declared with a `no-dependencies` label or a line
+  such as `Dependencies: none`. Saying nothing is not the same claim.
+- **Bot accounts** (Renovate, Dependabot, any `[bot]` login) are treated as machine
+  authors: their checklists and descriptions are capped like AI-written ones.
 - **Dependencies** are read from tracker links (Jira issue links, Linear
   "blocks" relations) and from declarations in the description
   (`depends on #12`, `blocked by ENG-42`). A `blocked` label zeroes the
@@ -234,11 +258,10 @@ linear:
   apiKey: ${LINEAR_API_KEY}
   teamId: abc123
   fieldMap:
-    validation_status:
+    validation_status:        # opt-in: by default no state implies validation
       field: state.type       # dot-path into the Linear issue object
       map:
-        completed: validated
-        started: assumed
+        completed: validated  # your team's choice, recorded in config
     tier:
       field: estimate
       map:

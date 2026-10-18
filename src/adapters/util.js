@@ -26,31 +26,32 @@ export function mergeFieldMap(defaults, userMap = {}) {
 }
 
 // Pull an acceptance-criteria block out of a free-text description.
-// Recognizes a heading containing "acceptance criteria" (markdown #, bold, or
-// plain line ending in ":"), or falls back to markdown checklist items.
+// Recognizes an explicit heading only: "Acceptance criteria", "Definition of
+// done", or "Tiêu chí nghiệm thu" (markdown #, bold, or a line ending in ":").
+//
+// v0.4: there is no checklist fallback. Issue templates ship pre-checked
+// attestation boxes ("Follow our Code of Conduct", "Read the docs"); reading
+// those as acceptance criteria scored 21 of 30 bug reports in a public-repo
+// illustration at 15/15. A criterion only counts when someone wrote it as one.
+const AC_HEADING_RE = /^\s*(?:#{1,6}\s*|\*\*)?\s*(?:acceptance\s+criteria|definition\s+of\s+done|ti[êe]u\s*ch[íi]\s*nghi[ệe]m\s*thu)\b/i
+
 export function extractAcceptanceCriteria(text) {
   if (!text?.trim()) return null
 
   const lines = text.split('\n')
-  const headingRe = /^\s*(?:#{1,6}\s*|\*\*)?\s*acceptance criteria\b/i
+  const start = lines.findIndex(l => AC_HEADING_RE.test(l))
+  if (start === -1) return null
 
-  const start = lines.findIndex(l => headingRe.test(l))
-  if (start !== -1) {
-    const block = []
-    for (let i = start + 1; i < lines.length; i++) {
-      // stop at the next heading
-      if (/^\s*#{1,6}\s/.test(lines[i]) || /^\s*\*\*[^*]+\*\*\s*$/.test(lines[i])) break
-      block.push(lines[i])
-    }
-    const body = block.join('\n').trim()
-    if (body) return body
+  // criteria written on the heading line itself ("Acceptance criteria: …")
+  const inline = lines[start].replace(AC_HEADING_RE, '').replace(/^[\s*:]+/, '').trim()
+  const block = inline ? [inline] : []
+  for (let i = start + 1; i < lines.length; i++) {
+    // stop at the next heading
+    if (/^\s*#{1,6}\s/.test(lines[i]) || /^\s*\*\*[^*]+\*\*\s*$/.test(lines[i])) break
+    block.push(lines[i])
   }
-
-  // fallback: markdown checklist anywhere in the description
-  const checklist = lines.filter(l => /^\s*[-*]\s*\[[ xX]\]/.test(l))
-  if (checklist.length) return checklist.join('\n')
-
-  return null
+  const body = block.join('\n').trim()
+  return body || null
 }
 
 // Labels are the cheapest place for a team to record validation explicitly.
@@ -111,6 +112,36 @@ const EVIDENCE_LINK_RE = new RegExp(
 
 export function detectEvidenceLinks(...texts) {
   return texts.some(t => t && EVIDENCE_LINK_RE.test(t))
+}
+
+// v0.4, GitHub only: a PR or commit URL counts as evidence only when it points
+// into the item's own repository. A link to another project's PR is not
+// evidence about this item. Closing keywords ("fixes #12") are repo-local by
+// construction and still count. Other hosts' URLs never count here.
+export function detectEvidenceLinksInRepo(repo, ...texts) {
+  const r = String(repo).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const scoped = new RegExp(
+    [`github\\.com/${r}/(?:pull|commit)/\\w+`, '\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\\s+#\\d+'].join('|'),
+    'i'
+  )
+  return texts.some(t => t && scoped.test(t))
+}
+
+// v0.4: an explicit statement that an item has no dependencies is a recorded
+// claim, distinct from never having declared any. Label `no-dependencies`, or a
+// line such as "Dependencies: none" / "Phụ thuộc: không".
+const NO_DEPS_LABELS = new Set(['no-dependencies', 'no dependencies', 'independent'])
+const NO_DEPS_RE = /^\s*(?:#{1,6}\s*|\*\*)?\s*(?:dependenc(?:y|ies)|depends\s+on|ph[ụu]\s*thu[ộô]c)\s*\**\s*:\s*\**\s*(?:none|n\/a|kh[ôo]ng(?:\s*c[óo])?)\s*\.?\s*$/im
+
+export function declaresNoDependencies(text, labels = []) {
+  if (labels.some(l => NO_DEPS_LABELS.has(String(l).toLowerCase().trim()))) return true
+  return NO_DEPS_RE.test(text ?? '')
+}
+
+// v0.4: an item opened by an automation account is machine-authored for the
+// purposes of anti-circularity rule 1, whether or not it carries an AI marker.
+export function isBotLogin(login, type) {
+  return type === 'Bot' || /\[bot\]$/i.test(String(login ?? ''))
 }
 
 // Declared dependencies parsed from free text: "depends on #12", "blocked by

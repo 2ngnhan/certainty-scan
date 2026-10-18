@@ -1,4 +1,4 @@
-// Certainty Score engine — instrument v0.3.
+// Certainty Score engine — instrument v0.4.
 // 100 points per item across five signal groups (Chapter 3 of the study design):
 //   Validation 40 · Workflow/dependencies 20 · Acceptance criteria 15 ·
 //   Evidence 15 · Discussion 10
@@ -9,12 +9,16 @@
 // tier, estimate, evidence, acceptance_criteria, citation_count,
 // description, labels, linked_evidence, dependencies, blocked, comments_text }
 
-// 0.3.0 — scoring is unchanged from 0.2.0 (same five signals, same weights, same
-// anti-circularity rules). The bump records a data-contract change: the vocabulary
-// rename in docs/instrument-design.md §3.1 altered exported field names, the label
-// convention, and the sealed envelope format. Two exports stamped with the same
-// version must be reconcilable, so a schema change has to move the stamp.
-export const INSTRUMENT_VERSION = '0.3.0'
+// 0.4.0 — the score now reads only what someone recorded on purpose, and the
+// position on the hill is a gated classification rather than a threshold on the
+// score (docs/instrument-design.md §4.9). Changes, each from a documented
+// failure: workflow closure no longer implies validation in any adapter;
+// acceptance criteria are read only under an explicit heading; items opened by
+// bot accounts are machine-authored for rule 1; GitHub evidence links must point
+// into the item's own repository; an explicit "Dependencies: none" earns full
+// workflow credit. Scores from 0.3.0 and 0.4.0 are not comparable, which is
+// what the stamp is for.
+export const INSTRUMENT_VERSION = '0.4.0'
 
 export const DEFAULT_SIGNAL_MAXIMA = {
   signals: {
@@ -55,6 +59,10 @@ function workflowSignal(item) {
   // No carve-out for done items: the instrument reads dependency states only,
   // so even completed work without declared dependencies stays at the default.
   if (!deps || deps.length === 0) {
+    // v0.4: "Dependencies: none" is a recorded claim; silence is not
+    if (item.dependencies_declared_none) {
+      return { points: 20, reason: 'declared to have no dependencies' }
+    }
     return { points: 10, reason: 'no dependencies declared (flagged for PM review)' }
   }
   if (deps.every(d => d.workflow_status === 'done')) {
@@ -152,9 +160,12 @@ const AI_MARKER_RE = /(generated\s+(?:by|with)\s+(?:ai|claude|copilot|chatgpt|gp
 const AI_LABELS = ['ai-generated', 'ai_generated', 'machine-generated']
 const REVIEW_LABELS = ['human-reviewed', 'reviewed', 'review:done']
 
+// v0.4: an item opened by a bot account (author_is_bot, set by adapters that
+// know the author) is machine-authored whether or not it carries a marker.
 export function isAIGenerated(item) {
   const labels = (item.labels ?? []).map(l => String(l).toLowerCase().trim())
-  return AI_MARKER_RE.test(item.description ?? '') || labels.some(l => AI_LABELS.includes(l))
+  return Boolean(item.author_is_bot) ||
+    AI_MARKER_RE.test(item.description ?? '') || labels.some(l => AI_LABELS.includes(l))
 }
 
 export function isHumanConfirmed(item) {
@@ -227,14 +238,59 @@ export function computeCertaintyScore(item) {
   return computeSignalScore(item)
 }
 
+// ── Hill state: gated classification (v0.4, §4.9) ───────────────────────────
+// The score ranks items; it does not decide where an item stands. An item is
+// classified by necessary conditions first and the score second, so no
+// combination of documentation points can carry a blocked item, or one resting
+// on an open dependency, over the crest.
+//
+//   done_verified    workflow done, AND validated with linked evidence
+//   done_unverified  workflow done, otherwise
+//   executing        not done, AND every crest gate holds
+//   uphill           not done, otherwise
+//
+// Crest gates: not blocked · dependencies resolved (all declared ones done, or
+// an explicit no-dependency declaration) · a decision recorded · score ≥ 50.
+
+export const CREST_THRESHOLD = 50
+
+export function crestGates(item, score = computeSignalScore(item)) {
+  const deps = item.dependencies ?? []
+  const blocked = Boolean(item.blocked) || item.workflow_status === 'blocked' ||
+    deps.some(d => d.workflow_status === 'blocked')
+  const dependenciesResolved = !blocked && (
+    deps.length > 0 ? deps.every(d => d.workflow_status === 'done') : Boolean(item.dependencies_declared_none)
+  )
+  return {
+    not_blocked: !blocked,
+    dependencies_resolved: dependenciesResolved,
+    decision_recorded: discussionState(item) === 'decision',
+    score_at_threshold: score >= CREST_THRESHOLD,
+  }
+}
+
+export function isVerified(item) {
+  return item.validation_status === 'validated' && Boolean(item.linked_evidence)
+}
+
+export function computeHillState(item, score = computeSignalScore(item)) {
+  const gates = crestGates(item, score)
+  const failed = Object.entries(gates).filter(([, ok]) => !ok).map(([g]) => g)
+  let state
+  if (item.workflow_status === 'done') state = isVerified(item) ? 'done_verified' : 'done_unverified'
+  else state = failed.length === 0 ? 'executing' : 'uphill'
+  return { state, gates, failed_gates: failed }
+}
+
 // Flags surfaced to the PM in the report and stamped into the research export.
 export function computeItemFlags(item) {
   const flags = []
   const blocked = item.blocked || item.workflow_status === 'blocked' ||
     (item.dependencies ?? []).some(d => d.workflow_status === 'blocked')
-  if (!blocked && !(item.dependencies?.length)) {
+  if (!blocked && !(item.dependencies?.length) && !item.dependencies_declared_none) {
     flags.push('no_dependencies_declared')
   }
+  if (item.workflow_status === 'done' && !isVerified(item)) flags.push('done_unverified')
   if (isUnconfirmedAI(item)) flags.push('machine_generated_unconfirmed')
   return flags
 }
@@ -246,6 +302,10 @@ export function scoreItems(items) {
     item.certainty_score = Math.min(
       item.certainty_breakdown.reduce((s, x) => s + x.points, 0), 100)
     item.flags = computeItemFlags(item)
+    const hill = computeHillState(item, item.certainty_score)
+    item.hill_state = hill.state
+    item.crest_gates = hill.gates
+    item.failed_gates = hill.failed_gates
   }
   return items
 }
@@ -286,6 +346,8 @@ export function tierWeight(tier) {
   return TIERS.find(t => t.value === tier)?.weight ?? 1.0
 }
 
+const stateOf = i => i.hill_state ?? computeHillState(i, i.certainty_score ?? computeSignalScore(i)).state
+
 export function computeMetrics(items) {
   const total = items.length
   const withTier = items.filter(i => i.tier)
@@ -314,8 +376,12 @@ export function computeMetrics(items) {
     avgCertaintyScore: avgCertainty,
     weightedAvgCertainty: weightedAvg,
     velocity: completedEstimate,
-    uphill: items.filter(i => (i.certainty_score || 0) < 50).length,
-    downhill: items.filter(i => (i.certainty_score || 0) >= 50).length,
+    // v0.4: counted from the gated state, not from the score
+    uphill: items.filter(i => stateOf(i) === 'uphill').length,
+    downhill: items.filter(i => stateOf(i) !== 'uphill').length,
+    executing: items.filter(i => stateOf(i) === 'executing').length,
+    doneVerified: items.filter(i => stateOf(i) === 'done_verified').length,
+    doneUnverified: items.filter(i => stateOf(i) === 'done_unverified').length,
     machineGeneratedUnconfirmed: items.filter(i => (i.flags ?? []).includes('machine_generated_unconfirmed')).length,
     noDependenciesDeclared: items.filter(i => (i.flags ?? []).includes('no_dependencies_declared')).length,
   }
