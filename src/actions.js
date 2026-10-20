@@ -89,7 +89,7 @@ export async function createGitHubIssues(githubConfig, plans) {
       '',
       ...actions.map(a => `- [ ] ${a.text} (+${a.gain})`),
       '',
-      '_Filed by [certainty-scan](https://github.com/2ngnhan/certainty-scan). Labelled `certainty-generated`: excluded from scoring._',
+      '_Filed by [certainty-scan](https://github.com/naucodehq/certainty-scan). Labelled `certainty-generated`: excluded from scoring._',
     ].join('\n')
 
     const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {

@@ -148,7 +148,7 @@ disappointing one — converts §A.3 from a promissory note into a finding.
 > **Artifact availability.** The instrument described in this paper is released
 > as `certainty-scan`, an open-source command-line tool (MIT licence), archived
 > at **doi:10.5281/zenodo.22026189**. Source:
-> `https://github.com/2ngnhan/certainty-scan`. Package:
+> `https://github.com/naucodehq/certainty-scan`. Package:
 > `https://www.npmjs.com/package/certainty-scan`. The scoring engine, the four
 > tracker adapters, the sealed-reveal validation protocol, and the full
 > instrument specification — including its stated limitations and falsification
@@ -171,7 +171,7 @@ disappointing one — converts §A.3 from a promissory note into a finding.
 | **Instrument version** | **0.3.0** — stamped into every report and export |
 | Licence | MIT |
 | Author | Nhan Nguyen — nhan@naucode.com |
-| Repository | https://github.com/2ngnhan/certainty-scan |
+| Repository | https://github.com/naucodehq/certainty-scan |
 | Package registry | https://www.npmjs.com/package/certainty-scan |
 | Documentation | https://certainty.naucode.io |
 | Specification | `docs/instrument-design.md` in the repository |
@@ -229,6 +229,9 @@ Neither is done yet. Both are required for the URLs in §C to resolve.
 
 1. **Rename the GitHub repository** `2ngnhan/certainty-units` → `2ngnhan/certainty-scan`.
    GitHub redirects the old URL, but the paper should cite the canonical one.
+   Update 2026-10-20: the repository has since moved to the `naucodehq`
+   organisation. The canonical URL is `https://github.com/naucodehq/certainty-scan`
+   (as in §C); old `2ngnhan/...` URLs redirect. The DOI is unchanged.
 2. **Publish `certainty-scan@0.5.0` to npm.** The package currently exists under
    the previous name; `npm publish` under the new name is required before
    `npx certainty-scan` works for a reader.

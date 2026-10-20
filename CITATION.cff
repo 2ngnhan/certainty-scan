@@ -24,7 +24,7 @@ version: 0.6.0
 date-released: 2026-10-18
 license: MIT
 doi: 10.5281/zenodo.22026189
-repository-code: "https://github.com/2ngnhan/certainty-scan"
+repository-code: "https://github.com/naucodehq/certainty-scan"
 url: "https://certainty.naucode.io"
 keywords:
   - project management

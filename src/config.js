@@ -23,7 +23,7 @@ export function loadConfig(filePath) {
 }
 
 export const CONFIG_TEMPLATE = `# certainty-scan configuration
-# Docs: https://github.com/2ngnhan/certainty-scan
+# Docs: https://github.com/naucodehq/certainty-scan
 
 project: My Project
 
