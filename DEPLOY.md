@@ -1,6 +1,6 @@
 # Deploy và phát hành
 
-Cập nhật 21/10/2026. Đọc trước khi phát hành `certainty-scan` hoặc chuyển repo sang chủ khác. Mọi dữ kiện dưới đây đã kiểm ngày 20 hoặc 21/10/2026, trừ chỗ ghi "chưa kiểm".
+Cập nhật 22/10/2026. Đọc trước khi phát hành `certainty-scan` hoặc chuyển repo sang chủ khác. Mọi dữ kiện dưới đây đã kiểm ngày 20 hoặc 21/10/2026, trừ chỗ ghi "chưa kiểm".
 
 Chuẩn chung: tài liệu "Hướng dẫn deploy và tổ chức repo trên GitHub" (Ops Portal, kệ Standards; nguồn `content/md-docs/standards/huong-dan-deploy.md` trong `naucodehq/naucode-portal`).
 
@@ -48,7 +48,9 @@ node src/cli.js init            # sinh certainty.config.yaml, mẫu mặc địn
 node src/cli.js sync            # đọc tracker theo config, sinh certainty-report.html
 ```
 
-Thử không cần khoá: trong `certainty.config.yaml` đặt `source: github` và `github.repo` là một repo công khai (`token` tuỳ chọn với repo công khai). File sinh ra (`certainty.config.yaml`, `certainty-report.*`, `certainty-data.json`, `.certainty-history.json`, file nghiên cứu) đã nằm trong `.gitignore`, đừng commit.
+Thử không cần khoá: trong `certainty.config.yaml` đặt `source: github`, mở `github.repo` là một repo công khai, rồi comment hoặc xoá dòng `apiKey: ${LINEAR_API_KEY}` (hoặc cả khối `linear:`) và để dòng `token: ${GITHUB_TOKEN}` ở trạng thái comment nếu không có biến đó. Lý do: `loadConfig` (`src/config.js`) bung `${VAR}` trên toàn bộ file, nên mọi `${VAR}` còn mở đều bắt buộc phải có, kể cả trong khối của source không dùng; thiếu thì `sync` báo `Missing env var: ...`.
+
+File sinh ra (`certainty.config.yaml`, `certainty-report.*`, `certainty-data.json`, `.certainty-history.json`, file nghiên cứu) đã nằm trong `.gitignore`, đừng commit.
 
 Phát hành (sau khi qua bước 0 và bước 1 ở trên):
 
@@ -100,7 +102,7 @@ Lần chuyển ngày 20/10/2026 (`2ngnhan` sang `naucodehq`), đã xong:
 
 - [ ] Zenodo: xác nhận `naucodehq/certainty-scan` có trong tab GitHub trên zenodo.org và đang bật, trước bản 0.6.0 (chưa kiểm).
 - [ ] npm: metadata còn ghi `2ngnhan` tới lần `npm publish` sau.
-- [ ] Chú thích trong mẫu config (`src/config.js`, dòng nói về research mode) trỏ `certainty.naucode.io/pilot-vi/`, đường này trả 404 (kiểm 21/10/2026). Trước khi phát hành 0.6.0: sửa chú thích trỏ tới một trang còn sống, hoặc thêm trang `pilot-vi/` vào `SITE_FILES` của `worker/scripts/build-site.mjs` bên repo `naucodehq/certainty-audit`.
+- [ ] Chú thích trong mẫu config (`src/config.js`, dòng nói về research mode) (`researchConfigBlock`) trỏ `certainty.naucode.io/pilot-vi/`, đường này trả 404 (kiểm 22/10/2026). Không phải lỗi do chuyển org: trang pilot đã bị gỡ khỏi site công khai có chủ đích ngày 19/08/2026 (commit `7210b1c` bên `naucodehq/certainty-audit`). Đừng thêm lại `pilot-vi` vào `SITE_FILES` bên đó: thư mục không còn, script build sẽ ném lỗi và job deploy đỏ. Cách sửa nằm trong repo này: trước khi phát hành 0.6.0, đổi chú thích sang một đích còn sống hoặc bỏ phần "see ...".
 - [ ] `CITATION.cff`: đổi `date-released` thành ngày phát hành thật của 0.6.0.
 - [ ] Gói npm chỉ có một maintainer là tài khoản cá nhân `2ngnhan`: cân nhắc thêm maintainer thứ hai hoặc chuyển sang npm org.
 - [ ] Repo chưa gắn team trong org `naucodehq`.
